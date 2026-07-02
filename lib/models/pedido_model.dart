@@ -20,6 +20,24 @@ class Pedido {
     required this.itens,
     this.observacao,
   });
+
+  // Transforma o mapa do JSON vindo do PHP em um objeto Pedido do Flutter
+  factory Pedido.fromJson(Map<String, dynamic> json) {
+    var list = json['itens'] as List;
+    List<ItemPedido> listaItens = list.map((i) => ItemPedido.fromJson(i)).toList();
+
+    return Pedido(
+      id: json['id'].toString(),
+      empresa: json['empresa'] ?? '',
+      cliente: json['cliente'] ?? '',
+      numeroPedido: json['numeroPedido'] ?? '',
+      data: json['data'] ?? '',
+      valor: double.tryParse(json['valor'].toString()) ?? 0.0,
+      transportadora: json['transportadora'] ?? '',
+      observacao: json['observacao'],
+      itens: listaItens,
+    );
+  }
 }
 
 class ItemPedido {
@@ -28,4 +46,12 @@ class ItemPedido {
   final String descricao;
 
   ItemPedido({required this.qtd, required this.um, required this.descricao});
+
+  factory ItemPedido.fromJson(Map<String, dynamic> json) {
+    return ItemPedido(
+      qtd: int.tryParse(json['qtd'].toString()) ?? 0,
+      um: json['um'] ?? '',
+      descricao: json['descricao'] ?? '',
+    );
+  }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/pedido_model.dart';
 import '../widgets/card_pedido.dart';
 
@@ -8,19 +10,49 @@ class ExpedicaoScreen extends StatefulWidget {
 }
 
 class _ExpedicaoScreenState extends State<ExpedicaoScreen> {
-  // Simulando sua lista de pedidos (substituiria pelo retorno do seu PHP/API)
-  List<Pedido> pedidos = [
-    Pedido(
-      id: "2662",
-      empresa: "sf",
-      cliente: "VENTOLUFY VENTILAÇÃO E SERVIÇOS MARITIMOS",
-      numeroPedido: "26/00777",
-      data: "19/05/2026",
-      valor: 300.00,
-      transportadora: "ENTREGA",
-      itens: [ItemPedido(qtd: 1, um: "PC", descricao: "EXAUSTOR EQ870M3 127V")],
-    ),
-  ];
+  // 1. REMOVIDO O 'VENTOLUFY' DAQUI. A lista começa vazia.
+  List<Pedido> pedidos = []; 
+  bool carregando = true;
+  String? erroMensagem;
+
+  @override
+  void initState() {
+    super.initState();
+    buscarPedidosDoBanco();
+  }
+
+  Future<void> buscarPedidosDoBanco() async {
+    // Altere para o IP do seu servidor Windows da rede local
+    final url = Uri.parse('http://192.168.1.198/seu_projeto/obter_pedidos.php');
+
+    try {
+      setState(() {
+        carregando = true;
+        erroMensagem = null;
+      });
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> dadosJson = json.decode(utf8.decode(response.bodyBytes));
+        
+        setState(() {
+          pedidos = dadosJson.map((json) => Pedido.fromJson(json)).toList();
+          carregando = false;
+        });
+      } else {
+        setState(() {
+          erroMensagem = 'Erro no servidor: ${response.statusCode}';
+          carregando = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        erroMensagem = 'Não foi possível conectar à API. Verifique a rede.';
+        carregando = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +60,15 @@ class _ExpedicaoScreenState extends State<ExpedicaoScreen> {
       appBar: AppBar(
         title: Text('Expedição Desktop', style: TextStyle(fontSize: 16)),
         backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: buscarPedidosDoBanco,
+          )
+        ],
       ),
       body: Column(
         children: [
-          // Header com a contagem (Semelhante ao seu .secao do CSS)
           Container(
             width: double.infinity,
             color: Colors.teal,
@@ -42,27 +79,49 @@ class _ExpedicaoScreenState extends State<ExpedicaoScreen> {
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
-          
-          // Corpo dinâmico (Vazio ou com Itens)
           Expanded(
-            child: pedidos.isEmpty
-                ? Center(
-                    child: Text(
-                      'Parabéns!\nVocê concluiu a separação de todos os pedidos',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: EdgeInsets.all(10),
-                    itemCount: pedidos.length,
-                    itemBuilder: (context, index) {
-                      return CardPedido(pedido: pedidos[index]);
-                    },
-                  ),
+            child: _construirCorpoTela(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _construirCorpoTela() {
+    if (carregando) {
+      return Center(child: CircularProgressIndicator(color: Colors.teal));
+    }
+
+    if (erroMensagem != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 40),
+            SizedBox(height: 8),
+            Text(erroMensagem!, style: TextStyle(color: Colors.red)),
+            TextButton(onPressed: buscarPedidosDoBanco, child: Text('Tentar Novamente'))
+          ],
+        ),
+      );
+    }
+
+    if (pedidos.isEmpty) {
+      return Center(
+        child: Text(
+          'Parabéns!\nVocê concluiu a separação de todos os pedidos',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.all(10),
+      itemCount: pedidos.length,
+      itemBuilder: (context, index) {
+        return CardPedido(pedido: pedidos[index]);
+      },
     );
   }
 }
