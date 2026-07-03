@@ -5,7 +5,7 @@ class PedidoScreen extends StatefulWidget {
   final Pedido pedido;
 
   // O construtor recebe exatamente o "pedido" selecionado
-  const PedidoScreen({Key? key, required this.pedido}) : super(key: key); 
+  const PedidoScreen({super.key, required this.pedido});
 
   @override
   _PedidoScreenState createState() => _PedidoScreenState();
@@ -89,7 +89,7 @@ class _PedidoScreenState extends State<PedidoScreen> {
               padding: EdgeInsets.all(12),
               itemCount: widget.pedido.itens.length,
               itemBuilder: (context, index) {
-                var item = widget.pedido.itens[index];
+                var item = widget.pedido.itens[index] as dynamic;
                 
                 return Card(
                   elevation: 2,
@@ -99,37 +99,37 @@ class _PedidoScreenState extends State<PedidoScreen> {
                     child: Row(
                       children: [
                         // Lado Esquerdo: Detalhes do Produto
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Localização Dinâmica (Tratada caso venha nula do banco)
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange[100],
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'LOC: ---',
-                                  style: TextStyle(color: Colors.orange[900], fontWeight: FontWeight.bold, fontSize: 12),
-                                ),
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Localização Dinâmica vinda do banco de dados
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange[100],
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                              SizedBox(height: 6),
-                              Text(
-                                item.descricao,
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              child: Text(
+                                'LOC: ${item.localizacao ?? "NÃO DEFINIDA"}',
+                                style: TextStyle(color: Colors.orange[900], fontWeight: FontWeight.bold, fontSize: 12),
                               ),
-                              SizedBox(height: 4),
-                              // Código do produto e quantidade solicitada
-                              Text(
-                                'Cód: ---  |  Qtd Solicitada: ${item.qtd} ${item.um}',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                              ),
-                            ],
-                          ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              item.descricao,
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 4),
+                            // Quantidade solicitada do produto vindo dinamicamente do banco
+                            Text(
+                              'Qtd Solicitada: ${item.qtd} ${item.um}',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                            ),
+                          ],
                         ),
+                      ),
                         
                         SizedBox(width: 16),
 
