@@ -44,15 +44,17 @@
   final int qtd;
   final String um;
   final String descricao;
-  final String? codigo;       // Campo novo opcional para o banco
-  final String? localizacao;  // Campo novo opcional para o banco
+  final String? codigo;       
+  final String? localizacao;  
+  final String? lote;         // Nova propriedade opcional para o lote
 
   ItemPedido({
     required this.qtd,
     required this.um,
     required this.descricao,
-    this.codigo,              // Adicionado sem 'required' para não quebrar o resto
-    this.localizacao,         // Adicionado sem 'required' para não quebrar o resto
+    this.codigo,              
+    this.localizacao,         
+    this.lote,                // Adicionado ao construtor
   });
 
   factory ItemPedido.fromJson(Map<String, dynamic> json) {
@@ -60,8 +62,9 @@
       qtd: int.tryParse(json['qtd'].toString()) ?? 0,
       um: json['um'] ?? '',
       descricao: json['descricao'] ?? '',
-      codigo: json['codigo']?.toString(),           // Mapeia o campo vindo do PHP
-      localizacao: json['localizacao']?.toString(), // Mapeia o campo vindo do PHP
+      codigo: json['codigo']?.toString(),           
+      localizacao: json['localizacao']?.toString(), 
+      lote: json['lote']?.toString(), // Mapeia o campo vindo do PHP
     );
   }
 }

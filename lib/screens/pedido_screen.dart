@@ -83,13 +83,14 @@ class _PedidoScreenState extends State<PedidoScreen> {
           
           Divider(height: 1, thickness: 1),
 
-          // 2. A listagem dinâmica de itens que você estava tentando encaixar!
+          // 2. A listagem dinâmica de itens com Localização, Lote e Código
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(12),
               itemCount: widget.pedido.itens.length,
               itemBuilder: (context, index) {
-                var item = widget.pedido.itens[index] as dynamic;
+                // Tipagem direta usando ItemPedido de forma segura
+                final item = widget.pedido.itens[index];
                 
                 return Card(
                   elevation: 2,
@@ -99,37 +100,58 @@ class _PedidoScreenState extends State<PedidoScreen> {
                     child: Row(
                       children: [
                         // Lado Esquerdo: Detalhes do Produto
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Localização Dinâmica vinda do banco de dados
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.orange[100],
-                                borderRadius: BorderRadius.circular(4),
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // ENCAIXE DO CÓDIGO NOVO: Linha com Localização e Lote dinâmicos
+                              Row(
+                                children: [
+                                  // Tag da Localização
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'LOC: ${item.localizacao ?? "NÃO DEFINIDA"}',
+                                      style: TextStyle(color: Colors.orange[900], fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                  ),
+                                  
+                                  // Só renderiza a tag de Lote se ele existir no banco
+                                  if (item.lote != null) ...[
+                                    SizedBox(width: 8),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[100],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'LOTE: ${item.lote}',
+                                        style: TextStyle(color: Colors.blue[900], fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                              child: Text(
-                                'LOC: ${item.localizacao ?? "NÃO DEFINIDA"}',
-                                style: TextStyle(color: Colors.orange[900], fontWeight: FontWeight.bold, fontSize: 12),
+                              SizedBox(height: 8),
+                              Text(
+                                item.descricao,
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                               ),
-                            ),
-                            SizedBox(height: 6),
-                            Text(
-                              item.descricao,
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 4),
-                            // Quantidade solicitada do produto vindo dinamicamente do banco
-                            Text(
-                              'Qtd Solicitada: ${item.qtd} ${item.um}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                            ),
-                          ],
+                              SizedBox(height: 4),
+                              // Exibe o Código do Produto (se houver) e a Quantidade solicitada
+                              Text(
+                                'Cód: ${item.codigo ?? "---"}  |  Qtd Solicitada: ${item.qtd} ${item.um}',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                         
                         SizedBox(width: 16),
 
