@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/pedido_model.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class PedidoScreen extends StatefulWidget {
   final Pedido pedido;
@@ -22,16 +24,14 @@ class _PedidoScreenState extends State<PedidoScreen> {
     
     // Inicializa os controladores dos produtos e lotes
     for (var item in widget.pedido.itens) {
-      final lotes = (item.lote == null)
-          ? <String>[]
-          : item.lote!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      final lotes = item.lotesDisponiveis.isEmpty ? <String>[] : item.lotesDisponiveis;
 
       for (var loteOpcao in lotes) {
         final chaveUnica = '${item.codigo ?? ""}_$loteOpcao';
         _controllers[chaveUnica] = TextEditingController();
 
         // Se este lote for o sugerido inicialmente pelo ERP, pré-preenche
-        if (item.lote == loteOpcao) {
+        if (item.loteSelecionado == loteOpcao) {
           _controllers[chaveUnica]!.text = item.qtd.toString();
         }
       }
@@ -47,7 +47,143 @@ class _PedidoScreenState extends State<PedidoScreen> {
     super.dispose();
   }
 
-  void _salvarConferencia() {
+  // Adicionamos 'async' para permitir esperar a resposta do servidor PHP
+  void _salvarConferencia() async {
+    List<String> erros = [];
+    // Esta lista vai estruturar o JSON exatamente como o PHP espera receber
+    List<Map<String, dynamic>> itensParaEnviar = [];
+    
+    // 1. Validação dos Volumes Finais Globais
+    final int qtdVolumes = int.tryParse(_volumesController.text) ?? 0;
+    if (qtdVolumes <= 0) {
+      erros.add('A quantidade de volumes do pedido deve ser maior que zero.');
+    }
+
+    // 2. Validação e Montagem do Payload
+    for (var item in widget.pedido.itens) {
+      int somaColetadaProduto = 0;
+
+      final lotes = item.lotesDisponiveis.isEmpty ? <String>[] : item.lotesDisponiveis;
+
+      for (var loteOpcao in lotes) {
+        final chaveUnica = '${item.codigo ?? ""}_$loteOpcao';
+        final int qtdDigitadaNoLote = int.tryParse(_controllers[chaveUnica]?.text ?? '') ?? 0;
+        somaColetadaProduto += qtdDigitadaNoLote;
+
+        // Adiciona o lote na lista de envio (mesmo se for zero, o PHP filtra)
+        itensParaEnviar.add({
+          "codigo": item.codigo,
+          "lote": loteOpcao,
+          "qtd_coletada": qtdDigitadaNoLote
+        });
+      }
+
+      final int qtdEsperada = item.qtd;
+
+      if (somaColetadaProduto < qtdEsperada) {
+        erros.add('${item.descricao}: Falta coletar ${qtdEsperada - somaColetadaProduto} ${item.um}.');
+      } else if (somaColetadaProduto > qtdEsperada) {
+        erros.add('${item.descricao}: Quantidade acima do pedido em ${somaColetadaProduto - qtdEsperada} ${item.um}.');
+      }
+    }
+
+    // Se falhar na validação local, para aqui e abre o alerta
+    if (erros.isNotEmpty) {
+      _exibirAlertaDivergencia(erros);
+      return;
+    }
+
+    // --- BLOCO DE ENVIO PARA O BANCO DE DADOS VIA PHP ---
+    
+    // Mostra uma rodinha de progresso na tela para o conferente saber que está salvando
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator(color: Colors.teal)),
+    );
+
+    try {
+      // Substitua pelo IP correto da sua máquina/WampServer na sua rede local
+      final url = Uri.parse('http://192.168.1.25/api/confirmar_conferencia.php');
+      
+      // Monta o objeto JSON completo
+      final payload = {
+        "pedido_id": widget.pedido.id,
+        "volumes": qtdVolumes,
+        "itens": itensParaEnviar
+      };
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode(payload),
+      ).timeout(Duration(seconds: 10)); // Cancela se o servidor demorar mais de 10s
+
+      Navigator.of(context).pop(); // Fecha a rodinha de progresso
+
+      if (response.statusCode == 200) {
+        final resultado = json.decode(response.body);
+        
+        if (resultado['sucesso'] == true) {
+          // Sucesso Total! Retorna mostrando o aviso verde
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resultado['mensagem']),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pop(); // Fecha a tela de detalhes e volta para a lista
+        } else {
+          // O PHP barrou por algum motivo interno do banco
+          _exibirErroServidor(resultado['mensagem']);
+        }
+      } else {
+        _exibirErroServidor('Falha na comunicação com o servidor. Código HTTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Fecha a rodinha de progresso se cair no catch
+      _exibirErroServidor('Não foi possível conectar ao servidor da expedição. Verifique sua rede local.');
+    }
+  }
+
+  // Métodos auxiliares para exibir as caixas de mensagem organizadas
+  void _exibirAlertaDivergencia(List<String> erros) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [Icon(Icons.warning, color: Colors.orange[800]), SizedBox(width: 10), Text('Atenção na Conferência')],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: erros.map((erro) => Text('• $erro', style: TextStyle(color: Colors.red[700], height: 1.4))).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('REVISAR')),
+        ],
+      ),
+    );
+  }
+
+    void _exibirErroServidor(String mensagem) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [Icon(Icons.error, color: Colors.red), SizedBox(width: 10), Text('Erro no Processamento')],
+        ),
+        content: Text(mensagem),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('OK', style: TextStyle(color: Colors.teal))),
+        ],
+      ),
+    );
+  }
+
+  void _validarConferencia() {
     List<String> erros = [];
     print('--- INICIANDO VALIDAÇÃO COMPLETA DA CONFERÊNCIA ---');
     
@@ -61,9 +197,7 @@ class _PedidoScreenState extends State<PedidoScreen> {
     for (var item in widget.pedido.itens) {
       int somaColetadaProduto = 0;
 
-      final lotes = (item.lote == null)
-          ? <String>[]
-          : item.lote!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      final lotes = item.lotesDisponiveis.isEmpty ? <String>[] : item.lotesDisponiveis;
 
       for (var loteOpcao in lotes) {
         final chaveUnica = '${item.codigo ?? ""}_$loteOpcao';
@@ -124,9 +258,7 @@ class _PedidoScreenState extends State<PedidoScreen> {
     print('--- SUCESSO: DADOS 100% CORRETOS ---');
     print('Volumes Totais Fechados: $qtdVolumes');
     for (var item in widget.pedido.itens) {
-      final lotes = (item.lote == null)
-          ? <String>[]
-          : item.lote!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      final lotes = item.lotesDisponiveis.isEmpty ? <String>[] : item.lotesDisponiveis;
 
       for (var loteOpcao in lotes) {
         final chaveUnica = '${item.codigo ?? ""}_$loteOpcao';
@@ -251,10 +383,12 @@ class _PedidoScreenState extends State<PedidoScreen> {
 
                         // Renderiza a lista vertical de inputs para cada lote do produto
                         Column(
-                          children: ((item.lote == null)
-                                      ? <String>[]
-                                      : item.lote!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList())
-                                  .map<Widget>((loteOpcao) {
+                          children: ( () {
+                            // Substitui o uso de 'item.lote' (inexistente) por 'item.lotesDisponiveis'
+                            final lotes = item.lotesDisponiveis.isEmpty ? <String>[] : item.lotesDisponiveis;
+                            return lotes;
+                          }() )
+                              .map<Widget>((loteOpcao) {
                             final chaveUnica = '${item.codigo ?? ""}_$loteOpcao';
 
                             return Padding(

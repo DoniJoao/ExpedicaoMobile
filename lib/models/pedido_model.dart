@@ -45,26 +45,34 @@
   final String um;
   final String descricao;
   final String? codigo;       
-  final String? localizacao;  
-  final String? lote;         // Nova propriedade opcional para o lote
+  final String? localizacao;    // Verifique se esta linha existe!
+  final String? loteSelecionado; // Verifique se esta linha existe!
+  final List<String> lotesDisponiveis;
 
   ItemPedido({
     required this.qtd,
     required this.um,
     required this.descricao,
     this.codigo,              
-    this.localizacao,         
-    this.lote,                // Adicionado ao construtor
+    this.localizacao,           
+    this.loteSelecionado,      
+    this.lotesDisponiveis = const [],
   });
 
   factory ItemPedido.fromJson(Map<String, dynamic> json) {
+    var lotesDoJson = json['lotes_disponiveis'] as List? ?? [];
+    List<String> listaLotes = lotesDoJson.map((l) => l.toString()).toList();
+
     return ItemPedido(
       qtd: int.tryParse(json['qtd'].toString()) ?? 0,
       um: json['um'] ?? '',
       descricao: json['descricao'] ?? '',
       codigo: json['codigo']?.toString(),           
-      localizacao: json['localizacao']?.toString(), 
-      lote: json['lote']?.toString(), // Mapeia o campo vindo do PHP
+      localizacao: json['localizacao']?.toString(), // Mapeamento do banco
+      loteSelecionado: json['lote']?.toString(),
+      lotesDisponiveis: listaLotes.isEmpty && json['lote'] != null 
+          ? [json['lote'].toString()] 
+          : listaLotes,
     );
   }
 }
