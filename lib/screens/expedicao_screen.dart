@@ -5,6 +5,8 @@ import '../models/pedido_model.dart';
 import '../widgets/card_pedido.dart';
 
 class ExpedicaoScreen extends StatefulWidget {
+  const ExpedicaoScreen({super.key});
+
   @override
   _ExpedicaoScreenState createState() => _ExpedicaoScreenState();
 }
