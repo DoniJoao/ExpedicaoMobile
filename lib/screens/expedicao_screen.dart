@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/pedido_model.dart';
 import '../widgets/card_pedido.dart';
+import 'assinatura_screen.dart'; // Importa a tela de assinaturas de coleta
 
 class ExpedicaoScreen extends StatefulWidget {
   const ExpedicaoScreen({super.key});
@@ -81,6 +82,35 @@ class _ExpedicaoScreenState extends State<ExpedicaoScreen> {
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
+
+        // BOTÃO DE ASSINATURAS ADICIONADO AQUI:
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                // Abre a tela que gerencia/lista as assinaturas de coleta
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AssinaturasScreen(), // Sua tela de destino
+                  ),
+                );
+              },
+              icon: const Icon(Icons.draw, color: Colors.white),
+              label: const Text(
+                'Ir para Assinaturas de Coleta',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal.shade700, // Tom de verde combinando
+                minimumSize: const Size(double.infinity, 48), // Ocupa toda a largura com altura confortável
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8), // Cantos levemente arredondados
+                ),
+              ),
+            ),
+          ),
+
           Expanded(
             child: _construirCorpoTela(),
           ),

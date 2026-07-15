@@ -239,7 +239,7 @@ class _PedidoScreenState extends State<PedidoScreen> {
                 ...erros.map((erro) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Text('• $erro', style: TextStyle(color: Colors.red[700], fontSize: 14)),
-                )).toList(),
+                )),
               ],
             ),
           ),
@@ -344,7 +344,7 @@ class _PedidoScreenState extends State<PedidoScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text('Código: ', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500)),
-                                  Text('${item.codigo ?? "---"}', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(item.codigo ?? "---", style: TextStyle(fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               SizedBox(height: 2),
