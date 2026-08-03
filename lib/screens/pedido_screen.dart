@@ -104,7 +104,8 @@ class _PedidoScreenState extends State<PedidoScreen> {
 
     try {
       // Substitua pelo IP correto da sua máquina/WampServer na sua rede local
-      final url = Uri.parse('http://192.168.1.25/api/confirmar_conferencia.php');
+      final url = Uri.parse('http://localhost/expedicao_db/confirmar_conferencia.php');
+
       
       // Monta o objeto JSON completo
       final payload = {
