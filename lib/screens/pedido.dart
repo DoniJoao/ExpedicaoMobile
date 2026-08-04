@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/pedido_model.dart';
+import '../models/pedidos.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 

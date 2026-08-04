@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/pedido_model.dart';
-import '../screens/pedido_screen.dart'; // Import crucial para o Flutter saber para onde ir
+import '../models/pedidos.dart';
+import '../screens/pedido.dart'; // Import crucial para o Flutter saber para onde ir
 
 class CardPedido extends StatelessWidget {
   final Pedido pedido;

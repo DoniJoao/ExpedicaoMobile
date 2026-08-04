@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/expedicao_screen.dart'; // Importa a tela que criamos antes
+import 'screens/expedicao.dart'; // Importa a tela que criamos antes
 
 void main() {
   runApp(MyApp());

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/pedido_model.dart';
+import '../models/pedidos.dart';
 import '../widgets/card_pedido.dart';
-import 'assinatura_screen.dart'; // Importa a tela de assinaturas de coleta
+import 'coleta.dart'; // Importa a tela de assinaturas de coleta
 
 class ExpedicaoScreen extends StatefulWidget {
   const ExpedicaoScreen({super.key});
